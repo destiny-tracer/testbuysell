@@ -18,6 +18,17 @@ import { savingsCalc } from './savings.js';
 import { debtCalc } from './debt.js';
 import { amortizationCalc } from './amortization.js';
 
+import { demoCalc } from './demo.js';
+
+export const calculators = [
+  demoCalc,
+  // Add other calculators here
+  stockAverageCalc,
+  savingsCalc,
+  debtCalc,
+  amortizationCalc
+];
+
 export const calculators = [
   stockAverageCalc,
   zerodhaBrokerageCalc,
