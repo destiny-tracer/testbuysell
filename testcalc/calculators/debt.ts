@@ -1,30 +1,38 @@
 /**
- * Debt Calculator
- * Calculates total debt payoff amount and interest based on multiple debts.
+ * Debt Calculator with Strategy Selection
+ * Allows user to select a debt payoff strategy and simulate results.
  */
+
+import { snowballStrategy } from '../strategies/snowball.js';
+import { avalancheStrategy } from '../strategies/avalanche.js';
+import { hybridStrategy } from '../strategies/hybrid.js';
 
 export const debtCalc = {
   id: 'debt',
   name: 'Debt Calculator',
-  description: 'Calculate total debt payoff and interest.',
+  description: 'Calculate total debt payoff and simulate strategies.',
   render(container: HTMLElement) {
     container.innerHTML = `
       <h2>${this.name}</h2>
       <p>${this.description}</p>
       <form id="debtForm">
         <div>
-          <label>Debt Amount (₹):</label>
-          <input type="number" id="debtAmount" required />
-        </div>
-        <div>
-          <label>Annual Interest Rate (%):</label>
-          <input type="number" id="interestRate" required />
+          <label>Enter debts (comma-separated: amount-interest-rate):</label>
+          <input type="text" id="debts" placeholder="e.g. 50000-12,30000-15" required />
         </div>
         <div>
           <label>Monthly Payment (₹):</label>
           <input type="number" id="monthlyPayment" required />
         </div>
-        <button type="submit">Calculate</button>
+        <div>
+          <label>Select Strategy:</label>
+          <select id="strategy">
+            <option value="snowball">Snowball (smallest debt first)</option>
+            <option value="avalanche">Avalanche (highest interest first)</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
+        </div>
+        <button type="submit">Simulate</button>
       </form>
       <div id="result"></div>
     `;
@@ -34,30 +42,33 @@ export const debtCalc = {
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      let balance = parseFloat((document.getElementById('debtAmount') as HTMLInputElement).value);
-      const annualRate = parseFloat((document.getElementById('interestRate') as HTMLInputElement).value);
+
+      const debtsInput = (document.getElementById('debts') as HTMLInputElement).value;
       const monthlyPayment = parseFloat((document.getElementById('monthlyPayment') as HTMLInputElement).value);
+      const strategy = (document.getElementById('strategy') as HTMLSelectElement).value;
 
-      const r = annualRate / 12 / 100;
-      let totalInterest = 0;
-      let months = 0;
+      // Parse debts
+      const debts = debtsInput.split(',').map(item => {
+        const [amount, rate] = item.split('-').map(Number);
+        return { amount, rate };
+      });
 
-      while (balance > 0) {
-        const interest = balance * r;
-        balance = balance + interest - monthlyPayment;
-        totalInterest += interest;
-        months++;
-        if (months > 1000) break; // safety
+      let result;
+      if (strategy === 'snowball') {
+        result = snowballStrategy(debts, monthlyPayment);
+      } else if (strategy === 'avalanche') {
+        result = avalancheStrategy(debts, monthlyPayment);
+      } else {
+        result = hybridStrategy(debts, monthlyPayment);
       }
 
-      const years = Math.floor(months / 12);
-      const remainingMonths = months % 12;
-
+      // Display results
       resultDiv.innerHTML = `
-        <h3>Payoff Time: ${years} years and ${remainingMonths} months</h3>
+        <h3>Strategy: ${strategy}</h3>
         <table border="1" style="margin-top:10px;width:100%;text-align:left;">
-          <tr><th>Total Interest Paid</th><td>₹${totalInterest.toFixed(2)}</td></tr>
-          <tr><th>Total Payments</th><td>₹${(totalInterest + parseFloat((document.getElementById('debtAmount') as HTMLInputElement).value)).toFixed(2)}</td></tr>
+          <tr><th>Total Interest Paid</th><td>₹${result.totalInterest.toFixed(2)}</td></tr>
+          <tr><th>Total Payments</th><td>₹${result.totalPaid.toFixed(2)}</td></tr>
+          <tr><th>Months to Payoff</th><td>${result.months}</td></tr>
         </table>
       `;
     });
